@@ -58,3 +58,28 @@ resource "aws_lb_listener" "web" {
 }
 
 # Target Group Attachment - will be done in ec2.tf after instances are created 
+# Listener Rule: Block specific IP with 400 response
+resource "aws_lb_listener_rule" "block_specific_ip" {
+  listener_arn = aws_lb_listener.web.arn
+  priority     = 100
+
+  action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/html"
+      message_body = "<!DOCTYPE html><html><head><title>Access Denied</title></head><body><h1>400 - Bad Request</h1><p>Access from your IP address is not allowed.</p><p>Your IP: 210.157.221.7</p></body></html>"
+      status_code  = "400"
+    }
+  }
+
+  condition {
+    source_ip {
+      values = ["210.157.221.7/32"]
+    }
+  }
+
+  tags = {
+    Name = "${var.project_name}-block-ip-rule"
+  }
+}
