@@ -83,3 +83,56 @@ resource "aws_lb_listener_rule" "block_specific_ip" {
     Name = "${var.project_name}-block-ip-rule"
   }
 }
+
+# Listener Rule: Block specific paths with 400 response
+resource "aws_lb_listener_rule" "block_admin_paths" {
+  listener_arn = aws_lb_listener.web.arn
+  priority     = 101
+
+  action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/html"
+      message_body = "<!DOCTYPE html><html><head><title>Path Forbidden</title></head><body><h1>400 - Bad Request</h1><p>Access to this path is forbidden.</p><p>Blocked paths: /admin/, /forbidden/, /api/private/</p></body></html>"
+      status_code  = "400"
+    }
+  }
+
+  condition {
+    path_pattern {
+      values = ["/admin/*", "/forbidden/*", "/api/private/*"]
+    }
+  }
+
+  tags = {
+    Name = "${var.project_name}-block-paths-rule"
+  }
+}
+
+# Listener Rule: Mobile-specific content
+resource "aws_lb_listener_rule" "mobile_content" {
+  listener_arn = aws_lb_listener.web.arn
+  priority     = 102
+
+  action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/html"
+      message_body = "<!DOCTYPE html><html><head><title>📱 Mobile Site</title><meta name='viewport' content='width=device-width, initial-scale=1'><style>body{font-family:Arial;padding:20px;text-align:center;background:#f0f8ff}</style></head><body><h1>�� Mobile Version</h1><p>Welcome to the mobile-optimized site!</p><p><strong>Detected: Mobile Device</strong></p><p>This is special content for mobile users!</p><hr><p>Server: Mobile-Optimized ALB Response</p></body></html>"
+      status_code  = "200"
+    }
+  }
+
+  condition {
+    http_header {
+      http_header_name = "User-Agent"
+      values           = ["*Mobile*", "*Android*", "*iPhone*", "*iPad*", "*iPod*", "*BlackBerry*", "*Windows Phone*"]
+    }
+  }
+
+  tags = {
+    Name = "${var.project_name}-mobile-content-rule"
+  }
+}
